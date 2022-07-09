@@ -7,7 +7,17 @@
 
 ATestTaskPlayerController::ATestTaskPlayerController()
 {
-	AdditionalVelocity = 0.0f;
+
+}
+
+void ATestTaskPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (ATestTaskPawn* TaskPawn = Cast<ATestTaskPawn>(GetPawn()))
+	{
+		TestTaskPawn = TaskPawn;
+	}
 }
 
 void ATestTaskPlayerController::SetupInputComponent()
@@ -20,15 +30,27 @@ void ATestTaskPlayerController::SetupInputComponent()
 		this, &ATestTaskPlayerController::IncreaseAdditionalVelocity);
 	InputComponent->BindAction("ChangeVelocity", EInputEvent::IE_Released,
 		this, &ATestTaskPlayerController::AddVelocityImpulse);
+
+	InputComponent->BindAction("UseAbility", EInputEvent::IE_Pressed,
+		this, &ATestTaskPlayerController::UseAbility);
+
+	InputComponent->BindAxis("ChangeDirection", this, &ATestTaskPlayerController::RotatePawn);
 }
 
 void ATestTaskPlayerController::RotatePawn(float Input)
 {
+	if (Input != 0)
+	{
+		if (TestTaskPawn)
+		{
+			TestTaskPawn->ChangeDirection(Input);
+		}
+	}
 }
 
 void ATestTaskPlayerController::IncreaseAdditionalVelocity()
 {
-	if (ATestTaskPawn* TestTaskPawn = Cast<ATestTaskPawn>(GetPawn()))
+	if (TestTaskPawn)
 	{
 		TestTaskPawn->IncreaseAdditionalVelocity();
 	}
@@ -36,8 +58,16 @@ void ATestTaskPlayerController::IncreaseAdditionalVelocity()
 
 void ATestTaskPlayerController::AddVelocityImpulse()
 {
-	if (ATestTaskPawn* TestTaskPawn = Cast<ATestTaskPawn>(GetPawn()))
+	if (TestTaskPawn)
 	{
 		TestTaskPawn->AddVelocityImpulse();
+	}
+}
+
+void ATestTaskPlayerController::UseAbility()
+{
+	if (TestTaskPawn)
+	{
+		TestTaskPawn->UseAbility();
 	}
 }

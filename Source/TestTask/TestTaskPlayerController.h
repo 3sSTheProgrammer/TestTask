@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "TestTaskPlayerController.generated.h"
 
+class ATestTaskPawn;
 /**
  * 
  */
@@ -16,14 +17,14 @@ class TESTTASK_API ATestTaskPlayerController : public APlayerController
 	
 protected:
 
-	UPROPERTY(EditAnywhere)
-	float AdditionalVelocity;
-
+	ATestTaskPawn* TestTaskPawn;
 public:
 	ATestTaskPlayerController();
 
 protected:
 
+	virtual void BeginPlay() override;
+	
 	virtual void SetupInputComponent() override;
 
 	void RotatePawn(float Input);
@@ -31,4 +32,6 @@ protected:
 	void IncreaseAdditionalVelocity();
 
 	void AddVelocityImpulse();
+
+	void UseAbility();
 };
