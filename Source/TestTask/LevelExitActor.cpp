@@ -3,8 +3,11 @@
 
 #include "LevelExitActor.h"
 
+#include "TestTaskEnemyActor.h"
 #include "TestTaskPawn.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ALevelExitActor::ALevelExitActor()
@@ -33,7 +36,39 @@ void ALevelExitActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 {
 	if (ATestTaskPawn* PlayerActor = Cast<ATestTaskPawn>(OtherActor))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Player entered level end zone"));
+		TArray<AActor*> RemainedEnemies;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestTaskEnemyActor::StaticClass(), RemainedEnemies);
+		if (RemainedEnemies.Num() > 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%d enemies remain to finish the level"), RemainedEnemies.Num());
+		}
+		else
+		{
+			EndLevel();
+		}
+		
+	}
+}
+
+void ALevelExitActor::EndLevel()
+{
+	FString CurrentLevelName = GetWorld()->GetMapName();
+	if ( CurrentLevelName == "Level1" )
+	{
+		//Open level2
+		UGameplayStatics::OpenLevel(GetWorld(), "Level2");
+	}
+	else if ( CurrentLevelName == "Level2" )
+	{
+		//Spawn Congratulations widget
+		if (FinishGameWidgetClass)
+		{
+			UUserWidget* FinishGameWidget = CreateWidget<UUserWidget>(GetWorld(), FinishGameWidgetClass);
+			if (FinishGameWidget)
+			{
+				FinishGameWidget->AddToViewport();
+			}
+		}
 	}
 }
 

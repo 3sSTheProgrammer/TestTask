@@ -25,7 +25,8 @@ void ATestTaskPawn::BeginPlay()
 	Super::BeginPlay();
 
 	StartingLocation = GetActorLocation();
-
+	StartingTransform = GetActorTransform();
+	
 	// find static mesh component
 	UStaticMeshComponent* StaticMeshComponent;
 	TArray<UStaticMeshComponent*> StaticMeshComponents;
@@ -43,9 +44,9 @@ void ATestTaskPawn::BeginPlay()
 
 void ATestTaskPawn::ResetToStartState()
 {
-    
-	SetActorLocation(StartingLocation);
-	SetActorRotation(FRotator::ZeroRotator);
+    SetActorTransform(StartingTransform);
+	// SetActorLocation(StartingLocation);
+	// SetActorRotation(FRotator::ZeroRotator);
 	AdditionalVelocity = 0;
 	IsVelocityIncreasing = false;
 }
@@ -119,7 +120,7 @@ void ATestTaskPawn::DestroyNextEnemy()
 		DrawDebugLine(GetWorld(), GetActorLocation(), EnemiesImpactedByAbility[MinAngleEnemyIndex]->GetActorLocation(),
 			FColor::Red, false, EnemyKillInterval, 0, 3);
 		
-		EnemiesImpactedByAbility[MinAngleEnemyIndex]->Destroy();
+		EnemiesImpactedByAbility[MinAngleEnemyIndex]->Die();
 		EnemiesImpactedByAbility.RemoveAt(MinAngleEnemyIndex);
 		UE_LOG(LogTemp, Warning, TEXT("%d enemies remain"), EnemiesImpactedByAbility.Num());
 	}

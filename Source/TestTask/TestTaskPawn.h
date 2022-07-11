@@ -21,6 +21,7 @@ protected:
 
 	FRotator CurrentRotationVelocity;
 
+	FTransform StartingTransform;
 	FVector StartingLocation;
 
 	bool IsUsingAbility;

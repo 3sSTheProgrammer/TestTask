@@ -3,12 +3,25 @@
 
 #include "TestTaskEnemyActor.h"
 
+
 // Sets default values
 ATestTaskEnemyActor::ATestTaskEnemyActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
+}
+
+void ATestTaskEnemyActor::Die()
+{
+	if (SpawnBridgeAfterDeath)
+	{
+		if (BridgeActor)
+		{
+			GetWorld()->SpawnActor<AActor>(BridgeActor, SpawnBridgeLocation, SpawnBridgeRotation);
+		}
+	}
+	Destroy();
 }
 
 // Called when the game starts or when spawned
@@ -16,12 +29,5 @@ void ATestTaskEnemyActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
-
-// Called every frame
-void ATestTaskEnemyActor::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
