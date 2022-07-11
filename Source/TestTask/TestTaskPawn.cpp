@@ -43,6 +43,7 @@ void ATestTaskPawn::BeginPlay()
 
 void ATestTaskPawn::ResetToStartState()
 {
+    
 	SetActorLocation(StartingLocation);
 	SetActorRotation(FRotator::ZeroRotator);
 	AdditionalVelocity = 0;
@@ -90,6 +91,64 @@ TArray<ATestTaskEnemyActor*> ATestTaskPawn::GetEnemiesInRange(float Range)
 	}
 
 	return EnemiesInRange;
+}
+
+void ATestTaskPawn::DestroyNextEnemy()
+{
+	
+	if (EnemiesImpactedByAbility.Num() > 0)
+	{
+		//Choose enemy to destroy
+		int32 MinAngleEnemyIndex = 0;
+		if (EnemiesImpactedByAbility.Num() > 1)
+		{
+			float MinAngleToEnemy = CalculateAngleToEnemy(EnemiesImpactedByAbility[0]->GetActorLocation());
+			
+			//UE_LOG(LogTemp, Warning, TEXT("found enemy at %f degrees"), AngleToEnemy);
+			for (int i = 1; i < EnemiesImpactedByAbility.Num(); ++i)
+			{
+				float AngleToEnemy = CalculateAngleToEnemy(EnemiesImpactedByAbility[i]->GetActorLocation());
+				if (AngleToEnemy < MinAngleToEnemy)
+				{
+					MinAngleToEnemy = AngleToEnemy;
+					MinAngleEnemyIndex = i;
+				}
+			}
+		}
+		
+		DrawDebugLine(GetWorld(), GetActorLocation(), EnemiesImpactedByAbility[MinAngleEnemyIndex]->GetActorLocation(),
+			FColor::Red, false, EnemyKillInterval, 0, 3);
+		
+		EnemiesImpactedByAbility[MinAngleEnemyIndex]->Destroy();
+		EnemiesImpactedByAbility.RemoveAt(MinAngleEnemyIndex);
+		UE_LOG(LogTemp, Warning, TEXT("%d enemies remain"), EnemiesImpactedByAbility.Num());
+	}
+	
+	if (EnemiesImpactedByAbility.Num() > 0)
+	{
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATestTaskPawn::DestroyNextEnemy,
+			EnemyKillInterval, false);
+	}
+	else
+	{
+		IsUsingAbility = false;
+	}	
+}
+
+float ATestTaskPawn::CalculateAngleToEnemy(FVector EnemyCoordinates)
+{
+	FVector ForwardVector = GetActorForwardVector();
+	FVector VectorToEnemy = EnemyCoordinates - GetActorLocation();
+	VectorToEnemy.Normalize();
+	float AngleToEnemy = 180 / 3.1415 * FMath::Acos( FVector::DotProduct(VectorToEnemy, ForwardVector));
+
+	FVector CrossProduct = FVector::CrossProduct(VectorToEnemy, ForwardVector);
+	if (CrossProduct.Z > 0)
+	{
+		AngleToEnemy = 360 - AngleToEnemy;			
+	}
+	return  AngleToEnemy;
 }
 
 // Called every frame
@@ -169,12 +228,27 @@ void ATestTaskPawn::ChangeDirection(float Input)
 
 void ATestTaskPawn::UseAbility()
 {
+	if (IsUsingAbility)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Already using ability"));
+		return;
+	}
+	
+	IsUsingAbility = true;
+	AdditionalVelocity = 0;
+	
 	UE_LOG(LogTemp, Warning, TEXT("Using ability"));
-	TArray<ATestTaskEnemyActor*> EnemiesInRange = GetEnemiesInRange(AbilityRange);
+	EnemiesImpactedByAbility = GetEnemiesInRange(AbilityRange);
 
-	UE_LOG(LogTemp, Warning, TEXT("Found %d enemies"), EnemiesInRange.Num());
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATestTaskPawn::DestroyNextEnemy, EnemyKillInterval, false);
+	
+	UE_LOG(LogTemp, Warning, TEXT("Found %d enemies"), EnemiesImpactedByAbility.Num());
 	DrawDebugCircle(GetWorld(), GetActorLocation(), AbilityRange, 100,
-		FColor::Red, false, 3, 0, 3,FVector(1, 0, 0),
+		FColor::Red, false, EnemiesImpactedByAbility.Num() * EnemyKillInterval, 0, 3,FVector(1, 0, 0),
 		FVector(0, 1, 0), true);
+
+	
+	
 }
 

@@ -24,6 +24,8 @@ protected:
 	FVector StartingLocation;
 
 	bool IsUsingAbility;
+
+	TArray<ATestTaskEnemyActor*> EnemiesImpactedByAbility;
 public:
 	UPROPERTY(EditAnywhere)
 	float RotationSpeedPerSecond { 45 };
@@ -39,6 +41,10 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float AbilityRange{ 600 };
+
+	UPROPERTY(EditAnywhere)
+	float EnemyKillInterval{ 0.1f };
+	
 public:
 	// Sets default values for this pawn's properties
 	ATestTaskPawn();
@@ -60,6 +66,10 @@ protected:
 		UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	TArray<ATestTaskEnemyActor*> GetEnemiesInRange(float Range);
+
+	void DestroyNextEnemy();
+
+	float CalculateAngleToEnemy(FVector EnemyCoordinates);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
