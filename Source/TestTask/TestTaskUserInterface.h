@@ -18,7 +18,8 @@ class TESTTASK_API UTestTaskUserInterface : public UUserWidget
 protected:
 	UPROPERTY()
 	int32 PlayerScore{ 0 };
-	
+
+	// A reference to text block object on the widget
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TextBlockPlayerScore;
 

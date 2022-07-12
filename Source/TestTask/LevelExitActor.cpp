@@ -22,6 +22,7 @@ void ALevelExitActor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//Find Collision Box and set overlap dynamic for it
 	TArray<UBoxComponent*> BoxComponents;
 	GetComponents(BoxComponents);
 
@@ -34,13 +35,16 @@ void ALevelExitActor::BeginPlay()
 void ALevelExitActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// If overlapping with player
 	if (ATestTaskPawn* PlayerActor = Cast<ATestTaskPawn>(OtherActor))
 	{
+		//Check if win condition is met
 		TArray<AActor*> RemainedEnemies;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestTaskEnemyActor::StaticClass(), RemainedEnemies);
 		if (RemainedEnemies.Num() > 0)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%d enemies remain to finish the level"), RemainedEnemies.Num());
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
+				FString::Printf(TEXT("%d enemies remain to finish the level"), RemainedEnemies.Num()));
 		}
 		else
 		{
@@ -52,6 +56,7 @@ void ALevelExitActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 
 void ALevelExitActor::EndLevel()
 {
+	//Depending on current level name
 	FString CurrentLevelName = GetWorld()->GetMapName();
 	if ( CurrentLevelName == "Level1" )
 	{

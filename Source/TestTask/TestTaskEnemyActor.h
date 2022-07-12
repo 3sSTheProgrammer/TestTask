@@ -27,6 +27,7 @@ public:
 	TSubclassOf<AActor> BridgeActor;
 
 protected:
+	// Reference to player interface, saved for efficiency
 	UPROPERTY()
 	UTestTaskUserInterface* PlayerInterface;
 	
@@ -34,11 +35,13 @@ public:
 	// Sets default values for this actor's properties
 	ATestTaskEnemyActor();
 
+	// Called to remove self from level
 	void Die();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Used to get player interface reference
 	void InitPlayerInterface();
 
 };

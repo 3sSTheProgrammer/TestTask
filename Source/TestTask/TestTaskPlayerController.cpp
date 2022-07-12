@@ -7,20 +7,17 @@
 #include "TestTaskUserInterface.h"
 #include "Blueprint/UserWidget.h"
 
-ATestTaskPlayerController::ATestTaskPlayerController()
-{
-
-}
-
 void ATestTaskPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Find and save player pawn
 	if (ATestTaskPawn* TaskPawn = Cast<ATestTaskPawn>(GetPawn()))
 	{
 		TestTaskPawn = TaskPawn;
 	}
 
+	// Create player interface
 	UTestTaskUserInterface* PlayerInterface = CreateWidget<UTestTaskUserInterface>(this, PlayerInterfaceClass);
 	if (PlayerInterface)
 	{
@@ -35,7 +32,7 @@ void ATestTaskPlayerController::SetupInputComponent()
 	check(InputComponent != nullptr);
 
 	InputComponent->BindAction("ChangeVelocity", EInputEvent::IE_Pressed, 
-		this, &ATestTaskPlayerController::IncreaseAdditionalVelocity);
+		this, &ATestTaskPlayerController::IncreaseVelocity);
 	InputComponent->BindAction("ChangeVelocity", EInputEvent::IE_Released,
 		this, &ATestTaskPlayerController::AddVelocityImpulse);
 
@@ -45,6 +42,7 @@ void ATestTaskPlayerController::SetupInputComponent()
 	InputComponent->BindAxis("ChangeDirection", this, &ATestTaskPlayerController::RotatePawn);
 }
 
+// Used to process rotation input
 void ATestTaskPlayerController::RotatePawn(float Input)
 {
 	if (Input != 0)
@@ -56,14 +54,16 @@ void ATestTaskPlayerController::RotatePawn(float Input)
 	}
 }
 
-void ATestTaskPlayerController::IncreaseAdditionalVelocity()
+// Used to process increasing velocity input
+void ATestTaskPlayerController::IncreaseVelocity()
 {
 	if (TestTaskPawn)
 	{
-		TestTaskPawn->IncreaseAdditionalVelocity();
+		TestTaskPawn->IncreaseVelocity();
 	}
 }
 
+// Used to process add impulse input
 void ATestTaskPlayerController::AddVelocityImpulse()
 {
 	if (TestTaskPawn)
@@ -72,6 +72,7 @@ void ATestTaskPlayerController::AddVelocityImpulse()
 	}
 }
 
+// Used to process use ability input
 void ATestTaskPlayerController::UseAbility()
 {
 	if (TestTaskPawn)

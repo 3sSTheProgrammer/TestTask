@@ -5,7 +5,6 @@
 
 ATestTaskGameModeBase::ATestTaskGameModeBase()
 {
-	//TODO: doesnt work((
 	// set pawn and player controller
 	ConstructorHelpers::FObjectFinder<UClass>
 		PawnClass(TEXT("Class'/Game/Blueprints/BP_TestTaskPawn.BP_TestTaskPawn_C'"));

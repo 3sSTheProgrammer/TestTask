@@ -10,6 +10,8 @@ void UTestTaskUserInterface::IncreasePlayerScore()
 {
 	PlayerScore += 1;
 	UpdatePlayerInterface();
+
+	//Save PlayerScore to GameInstance
 	if (UTestTaskGameInstance* GameInstance = Cast<UTestTaskGameInstance>(GetGameInstance()))
 	{
 		GameInstance->SetPlayerScore(PlayerScore);
@@ -20,6 +22,7 @@ void UTestTaskUserInterface::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	//Get PlayerScore from GameInstance
 	if (UTestTaskGameInstance* GameInstance = Cast<UTestTaskGameInstance>(GetGameInstance()))
 	{
 		PlayerScore = GameInstance->GetPlayerScore();

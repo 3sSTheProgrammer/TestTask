@@ -12,11 +12,11 @@ ATestTaskPawn::ATestTaskPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
 	IsVelocityIncreasing = false;
-	AdditionalVelocity = 0.0f;
+	PawnVelocity = 0.0f;
 	IsUsingAbility = false;
-		
-	CurrentRotationVelocity = FRotator::ZeroRotator;
+	RotationInput = 0;
 }
 
 // Called when the game starts or when spawned
@@ -24,7 +24,7 @@ void ATestTaskPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	StartingLocation = GetActorLocation();
+	// Save pawn starting transform
 	StartingTransform = GetActorTransform();
 	
 	// find static mesh component
@@ -36,36 +36,27 @@ void ATestTaskPawn::BeginPlay()
 	{
 		StaticMeshComponent = StaticMeshComponents[0];
 
-		// set up delegate for collisions with something else
-		StaticMeshComponent->OnComponentBeginOverlap.AddDynamic(this, &ATestTaskPawn::OnOverlapBegin);
+		// set up delegate for collisions with wall
 		StaticMeshComponent->OnComponentHit.AddDynamic(this, &ATestTaskPawn::OnHit);
 	}
 }
 
+// Puts pawn in the starting state
 void ATestTaskPawn::ResetToStartState()
 {
+	// Set actor to starting place and stop it 
     SetActorTransform(StartingTransform);
-	// SetActorLocation(StartingLocation);
-	// SetActorRotation(FRotator::ZeroRotator);
-	AdditionalVelocity = 0;
+	PawnVelocity = 0.f;
 	IsVelocityIncreasing = false;
-}
-
-void ATestTaskPawn::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Began overlap"));
-	if (OtherActor->ActorHasTag("Wall"))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit the wall"));
-	}
 }
 
 void ATestTaskPawn::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
+	// If hit the wall
 	if (OtherActor->ActorHasTag("Wall"))
 	{
+		// Change current direction depending on self and wall rotations
 		FRotator CurrentRotation = GetActorRotation();
 		float YawDifference = CurrentRotation.Yaw - OtherActor->GetActorRotation().Yaw;
 		CurrentRotation.Yaw += 180 - 2 * YawDifference;		
@@ -73,19 +64,26 @@ void ATestTaskPawn::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	}
 }
 
+// Returns an array of pointer to enemies, that should be impacted by ability
 TArray<ATestTaskEnemyActor*> ATestTaskPawn::GetEnemiesInRange(float Range)
 {
+	// Find all enemies actors
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestTaskEnemyActor::StaticClass(), FoundActors);
 
 	TArray<ATestTaskEnemyActor*> EnemiesInRange;
+
+	// For every found actor 
 	for (AActor* Actor : FoundActors)
 	{
+		// If actor is enemy
 		if (ATestTaskEnemyActor* EnemyActor = Cast<ATestTaskEnemyActor>(Actor))
 		{
+			// Check if the enemy is in ability range
 			float Distance = FVector::Dist(GetActorLocation(), EnemyActor->GetActorLocation());
 			if (Distance < Range)
 			{
+				// Add enemy to EnemiesInRange
 				EnemiesInRange.Add(EnemyActor);
 			}
 		}
@@ -94,18 +92,18 @@ TArray<ATestTaskEnemyActor*> ATestTaskPawn::GetEnemiesInRange(float Range)
 	return EnemiesInRange;
 }
 
+// Finds and destroys enemy after using ability
 void ATestTaskPawn::DestroyNextEnemy()
 {
-	
+	// If amount of impacted enemies is not zero
 	if (EnemiesImpactedByAbility.Num() > 0)
 	{
-		//Choose enemy to destroy
+		//Choose enemy with lowest angle to current direction to destroy
 		int32 MinAngleEnemyIndex = 0;
 		if (EnemiesImpactedByAbility.Num() > 1)
 		{
 			float MinAngleToEnemy = CalculateAngleToEnemy(EnemiesImpactedByAbility[0]->GetActorLocation());
 			
-			//UE_LOG(LogTemp, Warning, TEXT("found enemy at %f degrees"), AngleToEnemy);
 			for (int i = 1; i < EnemiesImpactedByAbility.Num(); ++i)
 			{
 				float AngleToEnemy = CalculateAngleToEnemy(EnemiesImpactedByAbility[i]->GetActorLocation());
@@ -116,39 +114,49 @@ void ATestTaskPawn::DestroyNextEnemy()
 				}
 			}
 		}
-		
+
+		// Draw a line to a targeted enemy
 		DrawDebugLine(GetWorld(), GetActorLocation(), EnemiesImpactedByAbility[MinAngleEnemyIndex]->GetActorLocation(),
 			FColor::Red, false, EnemyKillInterval, 0, 3);
-		
+
+		// Kill the enemy and remove him from impacted enemies array
 		EnemiesImpactedByAbility[MinAngleEnemyIndex]->Die();
 		EnemiesImpactedByAbility.RemoveAt(MinAngleEnemyIndex);
-		UE_LOG(LogTemp, Warning, TEXT("%d enemies remain"), EnemiesImpactedByAbility.Num());
 	}
-	
+
+	// If impacted enemies array is not yet empty
 	if (EnemiesImpactedByAbility.Num() > 0)
 	{
+		// Set timer for killing next enemy
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATestTaskPawn::DestroyNextEnemy,
 			EnemyKillInterval, false);
 	}
 	else
 	{
+		// Finish using the ability
 		IsUsingAbility = false;
 	}	
 }
 
+// Returns angle between direction to enemy and self forward vector in degrees
 float ATestTaskPawn::CalculateAngleToEnemy(FVector EnemyCoordinates)
 {
+	// Get and normalize forward vector and vector to enemy
 	FVector ForwardVector = GetActorForwardVector();
 	FVector VectorToEnemy = EnemyCoordinates - GetActorLocation();
 	VectorToEnemy.Normalize();
+
+	// Calculate angle between vectors using dot product
 	float AngleToEnemy = 180 / 3.1415 * FMath::Acos( FVector::DotProduct(VectorToEnemy, ForwardVector));
 
+	// Use cross product to adjust angles so they are calculated only clockwise
 	FVector CrossProduct = FVector::CrossProduct(VectorToEnemy, ForwardVector);
 	if (CrossProduct.Z > 0)
 	{
 		AngleToEnemy = 360 - AngleToEnemy;			
 	}
+	
 	return  AngleToEnemy;
 }
 
@@ -157,46 +165,49 @@ void ATestTaskPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	
 	FVector CurrentLocation = GetActorLocation();
+
+	// If fallen out of map -> move to start
 	if (CurrentLocation.Z < KillZ)
 	{
 		ResetToStartState();
 	}
 
+	// If player isn't using ability
 	if (!IsUsingAbility)
 	{
 		// If ChangeDirection input is not zero
-		if (CurrentRotationVelocity.Yaw != 0)
+		if (RotationInput != 0)
 		{
-			//Rotate
+			// Rotate pawn
 			FRotator CurrentRotation = GetActorRotation();
-			CurrentRotation.Yaw += CurrentRotationVelocity.Yaw * RotationSpeedPerSecond * DeltaTime;
-			//UE_LOG(LogTemp, Warning, TEXT("%f %f"), CurrentRotation.Roll, CurrentRotation.Pitch);
+			CurrentRotation.Yaw += RotationInput * RotationSpeedPerSecond * DeltaTime;
 			SetActorRotation(CurrentRotation);
-			CurrentRotationVelocity = FRotator::ZeroRotator;
-		
+			RotationInput = 0;
 		}
 	
-		//if player holds increase velocity button
+		// If player holds increase velocity button
 		if (IsVelocityIncreasing)
 		{
 			//increase starting velocity
-			AdditionalVelocity += VelocityIncreasePerSecond * DeltaTime;
+			PawnVelocity += VelocityIncreasePerSecond * DeltaTime;
 		}
-		else if (AdditionalVelocity > 0)
+		// otherwise
+		else if (PawnVelocity > 0)
 		{
 			//Move
-			float CoordinateChange = AdditionalVelocity * DeltaTime;
+			float CoordinateChange = PawnVelocity * DeltaTime;
 			FRotator CurrentRotation = GetActorRotation();
 			CurrentLocation.X += CoordinateChange * FMath::Cos(CurrentRotation.Yaw * 3.1415 / 180);
 			CurrentLocation.Y += CoordinateChange * FMath::Sin(CurrentRotation.Yaw * 3.1415 / 180);
 			SetActorLocation(CurrentLocation);
 
 			//Decrease speed
-			AdditionalVelocity -= VelocityDecreasePerSecond * DeltaTime;
-			if (AdditionalVelocity < 0)
+			PawnVelocity -= VelocityDecreasePerSecond * DeltaTime;
+			if (PawnVelocity < 0)
 			{
-				AdditionalVelocity = 0;
+				PawnVelocity = 0;
 			}
 	
 		}
@@ -204,52 +215,58 @@ void ATestTaskPawn::Tick(float DeltaTime)
 	
 }
 
-void ATestTaskPawn::IncreaseAdditionalVelocity()
+// Used to process increase velocity input
+void ATestTaskPawn::IncreaseVelocity()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Increase additional velocity"));
-	AdditionalVelocity = 0.0f;
+	// Stop pawn if moving
+	PawnVelocity = 0.0f;
+
+	// Set flag to increase velocity
 	IsVelocityIncreasing = true;
 }
 
+// Used to process add impulse input
 void ATestTaskPawn::AddVelocityImpulse()
 {
+	// Stop increasing velocity
 	IsVelocityIncreasing = false;
-	//UE_LOG(LogTemp, Warning, TEXT("Add velocity impulse"));
 }
 
+// Used to process change direction input
 void ATestTaskPawn::ChangeDirection(float Input)
 {
-	if (!IsVelocityIncreasing)
-	{
-		IsVelocityIncreasing = false;
-	}
-	AdditionalVelocity = 0.0f;
-	CurrentRotationVelocity.Yaw = Input;
+	// Stop pawn if moving
+	PawnVelocity = 0.0f;
+
+	// Set rotation input
+	RotationInput = Input;
 }
 
+// Used to process use ability input
 void ATestTaskPawn::UseAbility()
 {
+	// Ability cant be used while it still works
 	if (IsUsingAbility)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Already using ability"));
 		return;
 	}
-	
+
+	// Setting the flag and stopping the pawn
 	IsUsingAbility = true;
-	AdditionalVelocity = 0;
-	
-	UE_LOG(LogTemp, Warning, TEXT("Using ability"));
+	PawnVelocity = 0.f;
+
+	// Get enemies that should be impacted by ability
 	EnemiesImpactedByAbility = GetEnemiesInRange(AbilityRange);
 
+	// Set timer to destroy next enemy after given interval
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATestTaskPawn::DestroyNextEnemy, EnemyKillInterval, false);
 	
-	UE_LOG(LogTemp, Warning, TEXT("Found %d enemies"), EnemiesImpactedByAbility.Num());
+	// Show ability range for the duration of its work
 	DrawDebugCircle(GetWorld(), GetActorLocation(), AbilityRange, 100,
 		FColor::Red, false, EnemiesImpactedByAbility.Num() * EnemyKillInterval, 0, 3,FVector(1, 0, 0),
 		FVector(0, 1, 0), true);
-
-	
 	
 }
 

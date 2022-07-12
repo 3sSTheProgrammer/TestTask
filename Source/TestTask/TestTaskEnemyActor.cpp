@@ -15,12 +15,14 @@ ATestTaskEnemyActor::ATestTaskEnemyActor()
 
 void ATestTaskEnemyActor::Die()
 {
+	// Increase player score
 	if (!PlayerInterface)
 	{
 		InitPlayerInterface();
 	}
 	PlayerInterface->IncreasePlayerScore();
-	
+
+	// Spawn bridge if needed
 	if (SpawnBridgeAfterDeath)
 	{
 		if (BridgeActor)
@@ -28,6 +30,8 @@ void ATestTaskEnemyActor::Die()
 			GetWorld()->SpawnActor<AActor>(BridgeActor, SpawnBridgeLocation, SpawnBridgeRotation);
 		}
 	}
+
+	
 	Destroy();
 }
 
