@@ -3,11 +3,27 @@
 
 #include "TestTaskUserInterface.h"
 
+#include "TestTaskGameInstance.h"
 #include "Components/TextBlock.h"
 
 void UTestTaskUserInterface::IncreasePlayerScore()
 {
 	PlayerScore += 1;
+	UpdatePlayerInterface();
+	if (UTestTaskGameInstance* GameInstance = Cast<UTestTaskGameInstance>(GetGameInstance()))
+	{
+		GameInstance->SetPlayerScore(PlayerScore);
+	}
+}
+
+void UTestTaskUserInterface::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (UTestTaskGameInstance* GameInstance = Cast<UTestTaskGameInstance>(GetGameInstance()))
+	{
+		PlayerScore = GameInstance->GetPlayerScore();
+	}
 	UpdatePlayerInterface();
 }
 

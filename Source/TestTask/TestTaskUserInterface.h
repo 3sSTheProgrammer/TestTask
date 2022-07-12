@@ -26,5 +26,8 @@ public:
 	void IncreasePlayerScore();
 
 protected:
+
+	virtual void NativeConstruct() override;
+	
 	void UpdatePlayerInterface();
 };
