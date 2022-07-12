@@ -2,7 +2,8 @@
 
 
 #include "TestTaskEnemyActor.h"
-
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "TestTaskUserInterface.h"
 
 // Sets default values
 ATestTaskEnemyActor::ATestTaskEnemyActor()
@@ -14,6 +15,12 @@ ATestTaskEnemyActor::ATestTaskEnemyActor()
 
 void ATestTaskEnemyActor::Die()
 {
+	if (!PlayerInterface)
+	{
+		InitPlayerInterface();
+	}
+	PlayerInterface->IncreasePlayerScore();
+	
 	if (SpawnBridgeAfterDeath)
 	{
 		if (BridgeActor)
@@ -28,6 +35,17 @@ void ATestTaskEnemyActor::Die()
 void ATestTaskEnemyActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	InitPlayerInterface();
+}
+
+void ATestTaskEnemyActor::InitPlayerInterface()
+{
+	TArray<UUserWidget*> FoundWidgets;
+	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(GetWorld(), FoundWidgets, UTestTaskUserInterface::StaticClass());
+	if (FoundWidgets.Num() > 0)
+	{
+		PlayerInterface = Cast<UTestTaskUserInterface>(FoundWidgets[0]);
+	}
 }
 

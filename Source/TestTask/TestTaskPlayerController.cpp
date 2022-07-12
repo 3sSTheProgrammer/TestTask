@@ -4,6 +4,8 @@
 #include "TestTaskPlayerController.h"
 
 #include "TestTaskPawn.h"
+#include "TestTaskUserInterface.h"
+#include "Blueprint/UserWidget.h"
 
 ATestTaskPlayerController::ATestTaskPlayerController()
 {
@@ -17,6 +19,12 @@ void ATestTaskPlayerController::BeginPlay()
 	if (ATestTaskPawn* TaskPawn = Cast<ATestTaskPawn>(GetPawn()))
 	{
 		TestTaskPawn = TaskPawn;
+	}
+
+	UTestTaskUserInterface* PlayerInterface = CreateWidget<UTestTaskUserInterface>(this, PlayerInterfaceClass);
+	if (PlayerInterface)
+	{
+		PlayerInterface->AddToViewport();
 	}
 }
 

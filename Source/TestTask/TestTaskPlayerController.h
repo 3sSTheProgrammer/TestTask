@@ -14,9 +14,13 @@ UCLASS()
 class TESTTASK_API ATestTaskPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UUserWidget> PlayerInterfaceClass;
 	
 protected:
-
+	
 	ATestTaskPawn* TestTaskPawn;
 public:
 	ATestTaskPlayerController();

@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "TestTaskEnemyActor.generated.h"
 
+class UTestTaskUserInterface;
+
 UCLASS()
 class TESTTASK_API ATestTaskEnemyActor : public AActor
 {
@@ -24,6 +26,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Spawn Bridge")
 	TSubclassOf<AActor> BridgeActor;
 
+protected:
+	UPROPERTY()
+	UTestTaskUserInterface* PlayerInterface;
+	
 public:	
 	// Sets default values for this actor's properties
 	ATestTaskEnemyActor();
@@ -33,5 +39,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void InitPlayerInterface();
 
 };
